@@ -180,3 +180,8 @@ where speed > 700 AND
         on p.model = pc.model
         where pc.speed > 700
     )
+
+-- Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
+-- Una coppia deve essere elencata una sola volta (ovvero se elenco (i,j) allora non devo elencare (j,i) )
+
+???
