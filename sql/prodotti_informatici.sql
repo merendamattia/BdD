@@ -1,13 +1,13 @@
 -- DOC: https://www.w3schools.com/sql/default.asp
 
--- Quali modelli di PC hanno una velocità di almeno 1000
+-- 1) Quali modelli di PC hanno una velocità di almeno 1000
 PROJ_{ model } (
 	SEL_{ speed >= 1000 } ( 
 		pc 
 	)
 )
 
--- Quali costruttori fanno laptop con un hard disk di almeno 1 GB
+-- 2) Quali costruttori fanno laptop con un hard disk di almeno 1 GB
 PROJ_{ maker } (
 	SEL_{ hd >= 1 } (
 		product JOIN_{NAT} laptop 
@@ -21,21 +21,21 @@ PROJ_{ maker } (
 		)
 )
 
--- Trovare il numero di modello e il prezzo di tutti i prodotti (di qualunque tipo) costruiti da B
+-- 3) Trovare il numero di modello e il prezzo di tutti i prodotti (di qualunque tipo) costruiti da B
 
--- Trovare i modelli di tutte le stampanti laser a colori
+-- 4) Trovare i modelli di tutte le stampanti laser a colori
 PROJ_{ model } (
 	SEL_{ type = "laser" AND color } (
 		printer
 	)
 )
 
--- Trovare quei costruttori che vendono laptop ma non vendono pc
+-- 5) Trovare quei costruttori che vendono laptop ma non vendono pc
 laptop_makers( maker ) := PROJ_{maker} (product JOIN_NAT laptop);
 pc_makers( maker ) := PROJ_{maker} (product JOIN_NAT pc);
 laptop_makers - pc_makers
 
--- Trovare le dimensioni di disco fisso che occorrono almeno due PC distinti
+-- 6) Trovare le dimensioni di disco fisso che occorrono almeno due PC distinti
 PC1 := REN_{ model1, hd1 <- model, hd } ( PROJ_{model, hd} (pc) )
 PC2 := REN_{ model2, hd2 <- model, hd } ( PROJ_{model, hd} (pc) )
 PROJ_{ hd1 } (
@@ -43,11 +43,61 @@ PROJ_{ hd1 } (
 )	
 
 
--- Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
+-- 7) Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
 -- Una coppia deve essere elencata una sola volta (ovvero se elenco (i,j) allora non devo elencare (j,i) )
+PC1 := REN_{ model1, speed1, ram1 <- model, speed, ram} ( PROJ_{model, speed, ram} (pc) )
+PC1 := REN_{ model2, speed2, ram2 <- model, speed, ram} ( PROJ_{model, speed, ram} (pc) )
+PROJ_{ model1, model2 } (
+	PC1 JOIN_{ speed1 = speed2 AND ram1 = ram2 AND model1 < model2 } PC2 
+)
 
--- Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
+-- 8) Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
+computer_veloci(model) :=
+	PROJ_{model} ( SEL_{speed >= 700} (pc) )
+	UNION
+	PROJ_{model} ( SEL_{speed >= 700} (laptop) )
 
+CV1 := REN_{model1 <- model} ( computer_veloci )
+CV2 := REN_{model2 <- model} ( computer_veloci )
+
+maker1(maker1, model1) :=
+	REN_{maker1, model1 <- maker, model} ( PROJ_{maker, model} (product) )
+maker2(maker2, model2) :=
+	REN_{maker2, model2 <- maker, model} ( PROJ_{maker, model} (product) )
+
+PROJ_{maker1} (
+	(CV1 JOIN_NAT maker1)
+		JOIN_{ maker1 = maker2 and model1 != model2 }
+	(CV2 JOIN_NAT maker2)
+)
+
+-- 9) Trovare il/i costruttore/i del computer (pc o laptop) con la piu alta velocita disponibile
+C1(model, speed) := PROJ_{model, speed} (pc)
+C2(model, speed) := PROJ_{model, speed} (laptop)
+
+CM(maker, model, speed) :=
+	PROJ_{maker, model, speed} ( product JOIN_NAT (C1 UNION C2) )
+
+CM2(maker2, model2, speed2) := CM(maker, model, speed)
+
+C_LENTO(maler, model) :=
+	PROJ_{maker, model} ( CM1 JOIN_{ speed < speed2 } CM2 )
+
+C_TUTTI(maker, model) :=
+	PROJ_{maker, model} ( product JOIN_NAT (C1 UNION C2) )
+
+PROJ_{maker} ( C_TUTTI - C_LENTI )
+
+-- 10) Trovare tutti i costruttori di pc con almeno 3 velocità distinte
+-- 11) Trovare i costruttori che vendono esattamente 3 modelli di pc
+-- 12) Esprimere i vincoli di chiave primaria usando l'algebra relazionale
+** model è la chiave per product
+
+product1(maker1, model1, type1) := product(maker, model, type)
+product2(maker2, model2, type2) := product(maker, model, type)
+
+product1 JOIN_{ model1 = model2 AND (maker1 != maker2 OR type1 != type2 ) }
+	product2 = {}
 
 ------------- DDL
 create table product(
@@ -114,7 +164,7 @@ insert into printer(model, color, type, price) VALUES (10, false, 'laser', 99);
 
 
 ------------- DML
--- Trovare il numero di modello e il prezzo di tutti i prodotti (di qualunque tipo) costruiti da B
+-- 1) Trovare il numero di modello e il prezzo di tutti i prodotti (di qualunque tipo) costruiti da B
 select * from (
 
     select p.maker, p.model, l.price 
@@ -137,21 +187,21 @@ select * from (
 
 where maker = 'Samsung';
 
--- Quali modelli di PC hanno una velocità di almeno 1000
+-- 2) Quali modelli di PC hanno una velocità di almeno 1000
 select model from pc where speed >= 1000;
 
--- Quali costruttori fanno laptop con un hard disk di almeno 1 GB
+-- 3) Quali costruttori fanno laptop con un hard disk di almeno 1 GB
 select distinct maker 	-- distinct: https://www.w3schools.com/sql/sql_distinct.asp
 from product as p
 inner join laptop l
 on l.model = p.model AND l.hd >= 1000;
 
--- Trovare i modelli di tutte le stampanti laser a colori
+-- 4) Trovare i modelli di tutte le stampanti laser a colori
 select model
 from printer
 where type = 'laser' AND color
 
--- Trovare quei costruttori che vendono laptop ma non vendono pc
+-- 5) Trovare quei costruttori che vendono laptop ma non vendono pc
 select distinct maker 
 from laptop
 join product p 
@@ -162,13 +212,13 @@ where p.maker not in ( 		-- in: https://www.w3schools.com/sql/sql_in.asp
     on p.model = pc.model
 )
 
--- Trovare le dimensioni di disco fisso che occorrono almeno due PC distinti
+-- 6) Trovare le dimensioni di disco fisso che occorrono almeno due PC distinti
 select hd
 from pc
 group by hd 				-- group by: https://www.w3schools.com/sql/sql_groupby.asp
 having count(model) > 1 	-- having: https://www.w3schools.com/sql/sql_having.asp
 
--- Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
+-- 7) Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
 select distinct maker
 from laptop
 join product p
@@ -181,7 +231,20 @@ where speed > 700 AND
         where pc.speed > 700
     )
 
--- Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
+-- 8) Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
 -- Una coppia deve essere elencata una sola volta (ovvero se elenco (i,j) allora non devo elencare (j,i) )
 
-???
+-- 10) Trovare tutti i costruttori di pc con almeno 3 velocità distinte
+select maker
+from pc
+inner join product p
+    on pc.model = p.model
+group by maker
+having count(distinct "speed") >= 3;
+
+-- 11) Trovare i costruttori che vendono esattamente 3 modelli di pc
+select maker, count("speed")
+from pc
+inner join product p on pc.model = p.model
+group by maker
+having count("speed") = 3
