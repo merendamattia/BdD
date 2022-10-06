@@ -218,11 +218,30 @@ from pc
 group by hd 				-- group by: https://www.w3schools.com/sql/sql_groupby.asp
 having count(model) > 1 	-- having: https://www.w3schools.com/sql/sql_having.asp
 
--- 7) Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
+-- 7) Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram.
+-- Una coppia deve essere elencata una sola volta (ovvero se elenco (i,j) allora non devo elencare (j,i) )
+create view pc1 as 			-- view: https://www.w3schools.com/sql/sql_view.asp
+    select model, speed, rd
+    from pc;
+
+create view pc2 as
+    select model, speed, rd
+    from pc;
+
+select pc1.model as model1, pc2.model as model2,
+       pc1.speed as speed1, pc2.speed as speed2,
+       pc1.rd as ram1, pc2.rd as ram2
+from pc1
+inner join pc2
+on pc1.speed = pc2.speed 	AND
+   pc1.rd = pc2.rd 			AND
+   pc1.model < pc2.model;
+
+-- 8) Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
 select distinct maker
 from laptop
 join product p
-on p.model = laptop.model
+	on p.model = laptop.model
 where speed > 700 AND
     p.maker in (
         select maker from pc
@@ -231,8 +250,25 @@ where speed > 700 AND
         where pc.speed > 700
     )
 
--- 8) Trovare quelle coppie di modelli di pc che hanno la stessa velocità e la stessa ram. 
--- Una coppia deve essere elencata una sola volta (ovvero se elenco (i,j) allora non devo elencare (j,i) )
+-- 9) Trovare il/i costruttore/i del computer (pc o laptop) con la piu alta velocita disponibile
+create view pc_laptop as 		
+    select model, speed from pc
+    UNION
+    select model, speed from laptop;
+
+create view pc_laptop_product as
+    select p.maker, pl.model, pl.speed
+    from pc_laptop pl
+    inner join product p on pl.model = p.model;
+
+create view max_speed as
+    select max(speed)
+    from pc_laptop_product;
+
+select plp.maker, plp.model, plp.speed
+from pc_laptop_product as plp
+inner join max_speed m
+	on plp.speed = m.max;
 
 -- 10) Trovare tutti i costruttori di pc con almeno 3 velocità distinte
 select maker
