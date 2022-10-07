@@ -233,8 +233,8 @@ select pc1.model as model1, pc2.model as model2,
        pc1.rd as ram1, pc2.rd as ram2
 from pc1
 inner join pc2
-on pc1.speed = pc2.speed 	AND
-   pc1.rd = pc2.rd 			AND
+on pc1.speed = pc2.speed AND
+   pc1.rd = pc2.rd AND
    pc1.model < pc2.model;
 
 -- 8) Trovare quei costruttori di almeno due differenti computer (pc o laptop) con velocità di almeno 700
