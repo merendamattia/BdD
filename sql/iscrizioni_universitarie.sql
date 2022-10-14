@@ -56,3 +56,89 @@ create table iscrizioni (
     foreign key (studente) references studenti(matricola)
 );
 
+
+-- Codice e nome degli Insegnamenti disattivati 
+-- (che tacciono, cioè non compaiono in nessun manifesto)
+select i.codice, i.nome
+from insegnamenti i, manifesti m
+where i.codice not in (
+    select insegnamento from manifesti
+)
+order by nome;
+
+-- altra versione
+select codice, nome
+from insegnamenti
+except 
+select codice, nome
+from insegnamenti i, manifesti m
+where i.codice = m.insegnamento
+order by nome;
+
+
+-- Codice e nome degli Insegnamenti obbligatori
+select distinct i.codice, i.nome
+from insegnamenti i, manifesti m
+where i.codice = m.insegnamento
+    and m.fondamentale
+order by i.nome;
+
+
+-- Codice e nome degli Insegnamenti a scelta
+select distinct i.codice, i.nome
+from insegnamenti i, manifesti m
+where i.codice = m.insegnamento
+    and not m.fondamentale
+order by i.nome;
+
+
+-- Codice e nome degli Insegnamenti solo a scelta
+select distinct i.codice, i.nome
+from insegnamenti i, manifesti m
+where i.codice = m.insegnamento
+    and not m.fondamentale
+    and not exists (
+        select * 
+        from manifesti m2 
+        where m2.insegnamento = i.codice
+            and m2.fondamentale
+    )
+order by i.nome;
+
+
+-- Iscricioni "proseguimento" nel 2022
+create or replace view proseguimenti (codice, cognome, nome) 
+as
+select s.codice, s.cognome, s.nome
+from studenti s, iscrizione i22, iscrizione i21
+where i22.studente = i21.studente
+    and i22.anno_iscrizione = 2022
+    and i21.anno_iscrizione = 2021
+    and i22.laurea = i21.laurea
+    and i22.anno_corso = i21.anno_corso + 1
+    and s.matricola = i22.studente
+
+select * 
+from proseguimento 
+order by cognome, nome;
+
+
+-- Iscricioni "naturali" nel 2022
+select * from proseguimenti
+
+union
+
+select s.*
+from studenti s, iscrizione i22
+where i22.anno_iscrizione = 2022
+    and i22.anno_corso = 1
+    and s.matricola = i22.studente
+    and not exists (
+        select *
+        from iscrizioni i_old
+        where i_old.studente = s.matricola
+            and i_old.anno_iscrizione < 2022
+    )
+
+order by cognome, nome;
+
