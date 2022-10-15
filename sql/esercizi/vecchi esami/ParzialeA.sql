@@ -38,7 +38,7 @@ create or replace view libri_con_prestiti_scaduti as
 
 update prestiti
 set data_fine_prevista = data_fine_prevista + 30
-where copia_libro = (
+where copia_libro in (
     select cl.seriale
     from prestiti p, copie_libri cl, biblioteche b, libri l
     where p.copia_libro = cl.seriale
