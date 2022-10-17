@@ -14,7 +14,7 @@ create table autore_libri (
 	libro integer not null,
 	autore integer not null,
 	ordine_sequenza integer not null,
-	unique(ordine_sequenza),
+	unique(libro, autore, ordine_sequenza),
 	primary key (libro, autore),
 	foreign key (libro) references libri(codice),
 	foreign key (autore) references autori(codice)
