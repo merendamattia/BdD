@@ -1,7 +1,15 @@
+-- Corsi Laurea(codice, nome, descrizione, anni_corso)
+-- Insegnamenti(codice, nome, crediti, ssd)
+-- Manifesti(laurea(fk), insegnamento(fk), fondamentale(boolean), anno corso) 
+-- Studenti (matricola, nome, cognome, data nascita)
+-- Iscrizioni(studente(fk), anno iscrizione, laurea(fk), data iscrizione, anno corso)
+
+
 create table corsi_laurea (
     codice integer not null,
     nome varchar(200) not null,
     descrizione varchar(500) not null,
+    anni_corso integer not null,
     primary key (codice)
 );
 
@@ -141,4 +149,64 @@ where i22.anno_iscrizione = 2022
     )
 
 order by cognome, nome;
+
+-- Estrarre i nomi dei corsi di laurea il cui manifesto comprende
+-- un insegnamento di informatica (ssd uguale a INF/01 oppure ING-INF/05)
+-- come corso fondamentale
+select distinct c.nome
+from corsi_laurea c, insegnamenti i, manifesti m
+where c.codice = m.laurea
+    and m.insegnamento = i.codice
+    and i.fondamentale
+    and (i.ssd = 'INF/01' or i.ssd = 'ING-INF/05')
+
+
+-- per ogni corso di laurea, estrarre le date di nascita dello studente 
+-- piu` giovane e dello studente piu` vecchio iscritti a tale corso 
+-- nell’anno 2012;
+select c.nome,
+        min(s.data_nascita) as data_nascita_minore,
+        max(s.data_nascita) as data_nascita_maggiore
+from iscrizioni i, studenti s, codice c
+where i.studente = s.matricola
+    and i.anno_iscrizione = 2012
+    and c.codice = i.laurea
+group by c.nome
+order by c.nome;
+
+
+-- estrarre l’elenco degli insegnamenti che compaiono come fondamentali 
+-- in almeno tre corsi di laurea;
+select i.codice, i.nome
+from insegnamenti i, manifesti m
+where i.codice = m.insegnamento
+    and m.fondamentale
+group by i.codice, i.nome
+having count(*) >= 3;
+
+
+-- per ogni insegnamento, calcolare il numero (presunto) di studenti 
+-- iscritti nell’anno 2012 che frequentano l’insegnamento; 
+-- uno studente `e frequentante se l’insegnamento compare nel piano 
+-- degli studi del corso al quale `e iscritto ed `e erogato nello 
+-- stesso anno di corso dello studente.
+select i.codice, i.nome, count(i.studente) as numero_frequentanti
+from iscrizioni i, manifesti m, insegnamenti ins
+where i.anno_iscrizione = 2012
+    and i.laurea = m.laurea
+    and m.insegnamento = ins.codice
+    and i.anno_corso = m.anno_corso
+group by i.codice, i.nome
+
+
+-- per ogni studente iscritto nel 2021 al K-esimo anno di corso
+-- di un corso di laurea con N anni di corso, dove K < N
+-- iscriverlo nel 2022 allo stesso corso di laurea all'anno di corso K + 1
+insert into iscrizioni (studente, anno_iscrizione, laurea, data_iscrizione, anno_corso)
+    select i.studente, 2022, i.laurea, current_date, i.anno_corso + 1
+    from iscrizioni i, corsi_laurea c
+    where i.laurea = c.codice
+        and i.anno_corso < c.anni_corso
+        and i.anno_iscrizione = 2021
+
 
