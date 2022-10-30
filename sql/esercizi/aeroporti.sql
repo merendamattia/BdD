@@ -100,3 +100,41 @@ PROJ_{ ap1.Citta, ap1.Nazione } (
 		and ap1.Nazione != ap2.Nazione
 	} ( ap1 JOIN v JOIN ap2 )
 )
+
+
+-- Trovare il numero totale di partenze internazionali (del giovedì) da tutti gli aeroporti 
+select ap1.Citta, count(*) as numero_partenze_internazionali
+from aeroporto ap1, aeroporto ap2, volo v
+where v.CittaPart = ap1.Citta
+	and v.CittaArr = ap2.Citta
+	and ap1.Nazione != ap2.Nazione
+	and v.GiornoSett = 'Giovedi'
+group by ap1.Citta
+
+
+-- Le città francesi da cui ogni settimana partono più di 20 voli diretti per la Germania 
+select ap1.Citta as citta_francese_partenza, count(*) as numero_arrivi_in_germania
+from aeroporto ap1, aeroporto ap2, volo v
+where v.CittaPart = ap1.Citta
+	and v.CittaArr = ap2.Citta
+	and ap1.Nazione = 'Francia'
+	and ap2.Nazione = 'Germania'
+group by ap1.Citta
+having count(*) > 20
+
+
+-- Trovare il numero di voli del giovedì di ogni aeroporto da cui partano almeno 100 voli a settimana
+create view aeroporto_con_almeno_100_voli as
+	select v.CittaPart
+	from volo v
+	group by v.CittaPart
+	having count(*) >= 100
+
+select v.CittaPart, count(*) as num_voli
+from volo v
+where v.GiornoSett = 'Giovedi'
+	and v.CittaPart in ( 
+			select * from aeroporto_con_almeno_100_voli
+		)
+group by v.CittaPart
+
