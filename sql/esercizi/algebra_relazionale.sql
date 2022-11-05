@@ -28,8 +28,8 @@ b := barche_rosse_e_verdi
 
 PROJ_{ v.vid, v.nome } (
 	SEL_{ 
-		b.bid = p.bid and p.vid = v.vid
-	} (v JOIN p JOIN b)
+		b.bid = p.bid and p.vid = v.vid -- Selezione sul Prodotto Cartesiano
+	} (v JOIN p JOIN b) -- Prodotto Cartesiano
 )
 
 
@@ -43,17 +43,15 @@ having count(*) > 1
 
 -- Algebra Relazionale
 v := velisti
-p1 := prenotazioni
-p2 := p1
+p1 := REN_{ vidp1, bidp1, datap1 <- vid, bid, data } ( PROJ_{ vid, bid, data } (prenotazioni) )
+p2 := REN_{ vidp2, bidp2, datap2 <- vid, bid, data } ( PROJ_{ vid, bid, data } (prenotazioni) )
 
-PROJ_{ v.vid, v.vnome } (
-	SEL_{
-		v.vid = p1.vid
+PROJ_{ vid, vnome } (
+	SEL_{ -- Selezione sul Prodotto Cartesiano
+		vid = vidp1 and vid = vidp2
 		and
-		v.vid = p2.vid
-		and
-		(p1.bid != p2.bid or p1.data != p2.data)
-	} (v JOIN p1 JOIN p2)
+		(bidp1 != bidp2 or datap1 != datap2)
+	} (v JOIN p1 JOIN p2) -- Prodotto Cartesiano
 )
 
 
@@ -72,14 +70,14 @@ select vid
 from velisti_almeno_una_prenotazione_barca_rossa
 
 -- ALgebra Relazionale
-p := prenotazioni
-b := barche
-v := velisti
+p := REN_{ pvid, pbid, pdata <- vid, bid, pdata } ( PROJ_{vid, bid, pdata} (prenotazioni) )
+b := REN_{ bbid, bbnome, bcolore <- bid, bnome, bcolore } ( PROJ_{bid, bnome, bcolore} (barche) ) 
+v := REN_{ vvid <- vid } ( PROJ_{ vid } (velisti) )
 
 velisti_almeno_una_prenotazione_barca_rossa :=
-	PROJ_{ p.vid } (
+	PROJ_{ pvid } (
 		SEL_{
-			p.bid = b.bid and b.colore = 'rosso'
+			pbid = bbid and bcolore = 'rosso'
 		} ( p JOIN b)
 	)
 
@@ -102,14 +100,16 @@ where (a.argomento = 'motociclismo' or a.argomento = 'auto')
 	and a.codr = r.codr
 
 -- Algebra Relazionale
-r := rivista
-a := articolo
+r := REN_{ rcodr, rnomer, reditore <- codr, nomer, editore } ( PROJ_{ codr, nomer, editore } (rivista) )
+a := REN_{ acoda, atitolo, aargomento, acodr <- coda, titolo, argomento, codr } ( 
+		PROJ_{ coda, titolo, argomento, codr } (articolo)
+		)
 
-PROJ_{ r.codr, r.nomer } (
-	SEL_{ 
-		( a.argomento = 'motociclismo' or a.argomento = 'auto' )
-		and a.codr = r.codr 
-	} (a JOIN r)
+PROJ_{ rcodr, rnomer } (
+	SEL_{ -- Selezione sul Prodotto Cartesiano
+		( aargomento = 'motociclismo' or aargomento = 'auto' )
+		and acodr = rcodr 
+	} (a JOIN r) -- Prodotto Cartesiano
 )
 
 
@@ -132,24 +132,28 @@ from riviste_motociclismo rm, riviste_auto ra
 where rm.codr = ra.codr
 
 -- Algebra Relazionale
-r := rivista
-a := articolo
+r := REN_{ rcodr, rnomer, reditore <- codr, nomer, editore } ( PROJ_{ codr, nomer, editore } (rivista) )
+a := REN_{ acoda, atitolo, aargomento, acodr <- coda, titolo, argomento, codr } ( 
+		PROJ_{ coda, titolo, argomento, codr } (articolo)
+		)
 
 riviste_motociclismo := 
-	PROJ_{ r.codr, r.nomer, r.editore } (
-		SEL_{ r.codr = a.codr
-			and a.argomento = 'motociclismo' } (r JOIN a)
-	)	
-riviste_auto := 
-	PROJ_{ r.codr, r.nomer, r.editore } (
-		SEL_{ r.codr = a.codr
-			and a.argomento = 'auto' } (r JOIN a)
+	REN_{ rm_codr, rm_nomer, rm_editore <- rcodr, rnomer, reditore } (
+		PROJ_{ rcodr, rnomer, reditore } (
+			SEL_{ rcodr = acodr
+				and aargomento = 'motociclismo' } (r JOIN a)
+		)	
 	)
-rm := riviste_motociclismo
-ra := riviste_auto
+riviste_auto := 
+	REN_{ ra_codr, ra_nomer, ra_editore <- rcodr, rnomer, reditore } (
+		PROJ_{ rcodr, rnomer, reditore } (
+			SEL_{ rcodr = acodr
+				and aargomento = 'auto' } (r JOIN a)
+		)
+	)
 
-PROJ_{ rm.codr, rm.nomer } (
-	SEL_{ rm.codr = ra.codr } (ra JOIN rm)
+PROJ_{ rm_codr, rm_nomer } (
+	SEL_{ rm_codr = ra_codr } (riviste_auto JOIN riviste_motociclismo)
 )
 
 ------------------------------------------------------------------------------
@@ -177,26 +181,34 @@ except
 select * from compagnie_spettacoli_2003_10_16
 
 -- ALgebra Relazionale
-c := cartellone
-s := spettacolo
+c := 
+	REN_{ c_data, c_orainizio, c_cods, c_nometeatro <- data, orainizio, cods, nometeatro } (
+		PROJ_{ data, orainizio, cods, nometeatro } (
+			cartellone
+		)
+	)
+s := 
+	REN_{ s_cods, s_titolo, s_compagnia, s_durata <- cods, titolo, compagnia, durata } (
+		PROJ_{ cods, titolo, compagnia, durata } (
+			spettacolo
+		)
+	)
 
 compagnie_spettacoli_2003_10_15 :=
-	PROJ_{ s.compagnia } (
-		SEL_{ c.data = '2003-10-15'
-			and c.cods = s.cods 
+	PROJ_{ s_compagnia } (
+		SEL_{ c_data = '2003-10-15'
+			and c_cods = s_cods 
 		} (c JOIN s)
 	)
 compagnie_spettacoli_2003_10_16 :=
-	PROJ_{ s.compagnia } (
-		SEL_{ c.data = '2003-10-16'
-			and c.cods = s.cods 
+	PROJ_{ s_compagnia } (
+		SEL_{ c_data = '2003-10-16'
+			and c_cods = s_cods 
 		} (c JOIN s)
 	)
-c15 := compagnie_spettacoli_2003_10_15
-c16 := compagnie_spettacoli_2003_10_16
 
 compagnie_spettacoli_2003_10_15_ma_non_2003_10_16 :=
-	c15 - c16
+	compagnie_spettacoli_2003_10_15 - compagnie_spettacoli_2003_10_16
 
 ------------------------------------------------------------------------------
 
@@ -216,16 +228,32 @@ where q.codq = e1.codq
 	and e1.datainizio != e2.datainizio
 
 -- Algebra Relazionale
-q := quadro
-e1 := esposizione
-e2 := e1
+q := 
+	REN_{ q_codq, q_titolo, q_codp <- codq, titolo, codp} (
+		PROJ_{ codq, titolo, codp } (
+			quadro
+		)
+	)
 
-PROJ_{ q.codq, q.titolo } (
+e1 := 
+	REN_{ e1_codq, e1_datainizio, e1_nomegalleria <- codq, datainizio, nomegalleria } (
+		PROJ_{ codq, datainizio, nomegalleria } (
+			esposizione
+		)
+	)
+e2 := 
+	REN_{ e2_codq, e2_datainizio, e2_nomegalleria <- codq, datainizio, nomegalleria } (
+		PROJ_{ codq, datainizio, nomegalleria } (
+			esposizione
+		)
+	)
+
+PROJ_{ q_codq, q_titolo } (
 	SEL_{ 
-		q.codq = e1.codq
-		and e1.codq = e2.codq
-		and e1.nomegalleria == e2.nomegalleria
-		and e1.datainizio != e2.datainizio
+		q_codq = e1_codq
+		and e1_codq = e2_codq
+		and e1_nomegalleria == e2_nomegalleria
+		and e1_datainizio != e2_datainizio
 	} (q JOIN e1 JOIN e2)
 )
 
@@ -261,9 +289,22 @@ union
 select targa from vetture_mai_revisionate
 
 -- Algebra Relazionale
-v := vetture
-r := revisione
-r2 := r
+v := REN_{ v_targa, v_modello, v_dataimmatricolazione <- targa, modello, dataimmatricolazione } (
+		PROJ_{ targa, modello, dataimmatricolazione } (
+			vetture
+		)
+	)
+
+r := REN_{ r_targa, r_datarev, r_esito <- targa, datarev, esito } (
+		PROJ_{ targa, datarev, esito } (
+			revisione
+		)
+	)
+r2 := REN_{ r2_targa, r2_datarev, r2_esito <- targa, datarev, esito } (
+		PROJ_{ targa, datarev, esito } (
+			revisione
+		)
+	)
 
 vetture_immatricolate_dopo_2003_12_31 := 
 	PROJ_{ targa } ( SEL_{ dataimmatricolazione > '2003-12-31' } ( vetture ) )
@@ -271,14 +312,19 @@ vetture_immatricolate_dopo_2003_12_31 :=
 vx := vetture_immatricolate_dopo_2003_12_31 -- creo alias per abbreviare
 
 vetture_revisionate_almeno_due_volte :=
-	PROJ_{ r.targa } (
-		SEL_{
-			r.targa = r2.targa
-			and r.datarev != r2.datarev
-		} (r JOIN r2)
+	REN_{ targa <- r_targa } (
+		PROJ_{ r_targa } (
+			SEL_{
+				r_targa = r2_targa
+				and r_datarev != r2_datarev
+			} (r JOIN r2)
+		)
 	)
+	
 vetture_revisionate_massimo_una_volta :=
 	vx - vetture_revisionate_almeno_due_volte
+
+PROJ_{ targa } ( vetture_revisionate_massimo_una_volta )
 
 ------------------------------------------------------------------------------
 
@@ -298,16 +344,26 @@ where pc1.speed = pc2.speed
 	and pc1.model < pc2.model -- stampa solo (i, j) e non anche (j, i), es: pc1.model = 10, pc2.model = 15
 
 -- Algebra Relazionale
-pc1 := pc
-pc2 := pc
+pc1 :=
+	REN_{ pc1_model, pc1_speed, pc1_ram <- model, speed, ram } (
+		PROJ_{ model, speed, ram } (
+			pc
+		)
+	)
+pc2 :=
+	REN_{ pc2_model, pc2_speed, pc2_ram <- model, speed, ram } (
+		PROJ_{ model, speed, ram } (
+			pc
+		)
+	)
 
-PROJ_{ pc1.model, pc2.model } (
-	SEL_{
-		pc1.speed = pc2.speed
-		and pc1.ram = pc2.ram
-		and pc1.model != pc2.model
-		and pc1.model < pc2.model
-	} (pc1 JOIN pc2)
+PROJ_{ pc1_model, pc2_model } (
+	SEL_{ -- Selezione sul Prodotto Cartesiano
+		pc1_speed = pc2_speed
+		and pc1_ram = pc2_ram
+		and pc1_model != pc2_model
+		and pc1_model < pc2_model
+	} (pc1 JOIN pc2) -- Prodotto Cartesiano 
 )
 
 
