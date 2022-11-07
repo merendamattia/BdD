@@ -119,7 +119,7 @@ where ac.auto = a.targa
 group by a.marca;
 
 
--- Usando l'algebra relazionale, estrarre i proprietaru di almeno due automezzi che
+-- Usando l'algebra relazionale, estrarre i proprietari di almeno due automezzi che
 -- sono assicurati con compagnie distinte e sono stati entrambi coinvolti in sinistri
 p := proprietari
 a := auto

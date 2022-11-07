@@ -88,10 +88,109 @@ C_TUTTI(maker, model) :=
 
 PROJ_{maker} ( C_TUTTI - C_LENTI )
 
+---------------------
+
+-- 9) Trovare il/i costruttore/i del computer (pc o laptop) con la piu alta velocita disponibile
+laptop := PROJ_{ model, speed } ( laptop )
+pc := PROJ_{ model, speed } ( pc )
+
+computer := laptop union pc
+
+max_speed := REN_{ max_speed_value <- speed } ( MAX_{ speed } ( computer ) )
+
+product := REN_{ p_maker, p_model <- maker, model } (
+	PROJ_{ maker, model } ( product )
+)
+
+PROJ_{ p_maker } (
+	SEL_{
+		model = p_model
+		and
+		speed = max_speed_value
+	} ( computer JOIN_{NAT} product JOIN_{NAT} max_speed )
+)
+
 -- 10) Trovare tutti i costruttori di pc con almeno 3 velocità distinte
+-- SQL
+select pr.maker
+from pc, product pr
+where pc.model = pr.model
+group by pr.maker
+having count(distinct pc.speed) >= 3
+
+-- Algebra Relazionale
+pc1 := REN_{ pc1_model, pc1_speed <- model, speed } ( PROJ_{ model, speed } ( pc ) )
+pc2 := REN_{ pc2_model, pc2_speed <- model, speed } ( PROJ_{ model, speed } ( pc ) )
+pc3 := REN_{ pc3_model, pc3_speed <- model, speed } ( PROJ_{ model, speed } ( pc ) )
+
+prod1 := REN_{ pr1_maker, pr1_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+prod2 := REN_{ pr2_maker, pr2_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+prod3 := REN_{ pr3_maker, pr3_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+
+maker_che_hanno_pc_con_tre_velocita_distinte :=
+	PROJ_{ pr_maker } (
+		SEL_{ 
+			pc1_model = pr1_model and
+			pc2_model = pr2_model and
+			pc3_model = pr3_model and
+			pr1_maker = pr2_maker and
+			pr2_maker = pr3_maker and
+			pc1_speed != pc2_speed and
+			pc2_speed != pc3_speed and
+			pc3_speed != pc1_speed
+		} (pc1 JOIN_NAT pc2 JOIN_NAT pc3 JOIN_NAT prod1 JOIN_NAT prod2 JOIN_NAT prod3)
+	)
+
+
 -- 11) Trovare i costruttori che vendono esattamente 3 modelli di pc
+-- SQL
+select pr.maker
+from pc, product pr
+where pc.model = pr.model
+group by pr.maker
+having count(distinct pc.model) = 3
+
+-- Algebra Relazionale
+pc1 := REN_{ pc1_model <- model } ( PROJ_{ model } ( pc ) )
+pc2 := REN_{ pc2_model <- model } ( PROJ_{ model } ( pc ) )
+pc3 := REN_{ pc3_model <- model } ( PROJ_{ model } ( pc ) )
+pc4 := REN_{ pc4_model <- model } ( PROJ_{ model } ( pc ) )
+
+prod1 := REN_{ pr1_maker, pr1_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+prod2 := REN_{ pr2_maker, pr2_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+prod3 := REN_{ pr3_maker, pr3_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+prod4 := REN_{ pr4_maker, pr4_model <- maker, model } ( PROJ_{ maker, model } ( product ) )
+
+produttori_almeno_tre := 
+	PROJ_{ pr1_maker } (
+		SEL_{
+			pc1_model = pr1_model and
+			pc2_model = pr2_model and
+			pc3_model = pr3_model and
+			pr1_maker = pr2_maker and
+			pr2_maker = pr3_maker
+		} ( pc1 join pc2 join pc3 join prod1 join prod2 join prod3 )
+	)
+
+produttori_almeno_quattro := 
+	PROJ_{ pr1_maker } (
+		SEL_{
+			pc1_model = pr1_model and
+			pc2_model = pr2_model and
+			pc3_model = pr3_model and
+			pc4_model = pr4_model and
+			pr1_maker = pr2_maker and
+			pr2_maker = pr3_maker and
+			pr3_maker = pr4_maker
+		} ( pc1 join pc2 join pc3 join pc4 join prod1 join prod2 join prod3 join prod4 )
+	)
+
+produttori_esattamente_tre :=
+	produttori_almeno_tre - produttori_almeno_quattro
+
+
 -- 12) Esprimere i vincoli di chiave primaria usando l'algebra relazionale
-** model è la chiave per product
+-- model è la chiave per product
 
 product1(maker1, model1, type1) := product(maker, model, type)
 product2(maker2, model2, type2) := product(maker, model, type)

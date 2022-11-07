@@ -168,7 +168,7 @@ create view opere_fruibili (museo, opera) as
 -- e i restauri
 insert into prestiti (opera, museo, data_inizio, data fine)
 	select o.codice, 'Uffizi', '2016-04-15', '2016-06-05'
-	from opere o, artista a
+	from opere o
 	where o.artista = 'Giotto'
 		and o.museo != 'Uffizi'
 
@@ -210,16 +210,19 @@ order by count(*) desc, o.museo asc
 
 
 -- 14. Usando l’algebra relazionale, codificare il vincolo di chiave primaria per la relazione musei.
-m := musei
-o := opere
+m1 := REN_{ m1_nome, m1_citta <- nome, citta } ( PROJ_{ nome, citta } ( musei ) )
+m2 := REN_{ m2_nome, m2_citta <- nome, citta } ( PROJ_{ nome, citta } ( musei ) )
 
-m _JOIN { m.nome = o.musei } a = {}
+SEL_{ 
+	m1_nome = m2_nome and m1_citta != m2_citta 
+	} (m1 JOIN_{NAT} m2) = {} 
 
 
--- 15. Usando l’algebra relazionale, esprimere il vincolo di integrità che impedisce ad un artista di realizzare un’opera quando non è in vita.
+-- 15. Usando l’algebra relazionale, esprimere il vincolo di integrità che impedisce ad un artista di 
+-- realizzare un’opera quando non è in vita.
 a := artisti
 o := opera
 
 o _JOIN { o.artista = a.nome and 
-			(a.anno_morte not null or a.anno_morte > o.anno)
+			(a.anno_morte not null or a.anno_morte < o.anno)
 		} a = {}

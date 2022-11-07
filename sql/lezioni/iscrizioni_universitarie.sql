@@ -131,7 +131,7 @@ from proseguimento
 order by cognome, nome;
 
 
--- Iscricioni "naturali" nel 2022
+-- Iscrizioni "naturali" nel 2022
 select * from proseguimenti
 
 union
