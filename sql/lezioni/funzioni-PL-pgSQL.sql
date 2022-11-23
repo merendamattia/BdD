@@ -5,3 +5,14 @@ begin
 end
 $body$
 language plpgsql;
+
+-------------------------------------------------
+
+create or replace function pippo() returns void as
+$body$
+begin
+	create table pippo(a integer primary key);
+	-- insert into pippo values (1) (2) (3);
+end
+$body$
+language plpgsql;
