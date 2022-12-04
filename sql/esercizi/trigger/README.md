@@ -65,10 +65,3 @@ CREATE [ OR REPLACE ] FUNCTION name
 	$body$
 language plpgsql;
 ```
-
-
-
-
-
-
-
